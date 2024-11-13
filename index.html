@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trafix - Metro Manila Navigation</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.3/dist/leaflet-routing-machine.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
+    <style>
+        #map { height: 100vh; width: 100%; }
+        #search-bar { 
+            position: absolute; top: 10px; left: 10px; z-index: 999; background: white; padding: 10px; 
+        }
+        #search-bar input {
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+
+<div id="search-bar">
+    <label for="start">Start Location:</label>
+    <input type="text" id="start" placeholder="Enter starting point">
+    <br>
+    <label for="end">End Location:</label>
+    <input type="text" id="end" placeholder="Enter destination">
+    <button id="search-btn">Search</button>
+</div>
+
+<div id="map"></div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet-routing-machine@3.2.3/dist/leaflet-routing-machine.js"></script>
+<script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+
+<script>
+    var map = L.map('map').setView([14.5995, 120.9842], 12); // Set initial view to Metro Manila (14.5995, 120.9842)
+
+    // Add OpenStreetMap tiles
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+
+    // List of locations with real coordinates in Metro Manila
+    var locations = {
+        "Makati": [14.5547, 121.0244],
+        "Quezon City": [14.6760, 121.0437],
+        "Manila": [14.5995, 120.9842],
+        "Taguig": [14.5200, 121.0509],
+        "Pasig": [14.5733, 121.0615],
+        "Mandaluyong": [14.5792, 121.0357],
+        "Pasay": [14.5378, 120.9993],
+        "Caloocan": [14.6416, 120.9762],
+        "Marikina": [14.6299, 121.0992],
+        "Las Piñas": [14.4334, 120.9917],
+        "Valenzuela": [14.6812, 120.9760],
+        "Muntinlupa": [14.3917, 121.0333],
+        "Parañaque": [14.4997, 121.0141]
+    };
+
+    // Create routing control
+    var routeControl = L.Routing.control({
+        waypoints: [],
+        routeWhileDragging: true,
+        geocoder: L.Control.Geocoder.nominatim(),
+        createMarker: function() { return null; } // Disable markers on route
+    }).addTo(map);
+
+    // Add search functionality
+    $('#search-btn').on('click', function() {
+        var startLocation = $('#start').val();
+        var endLocation = $('#end').val();
+
+        // Geocode the start location
+        var geocoder = L.Control.Geocoder.nominatim();
+        var startLatLng, endLatLng;
+
+        // Start location geocode
+        geocoder.geocode(startLocation, function(results) {
+            if (results && results.length > 0) {
+                startLatLng = results[0].center;
+                map.setView(startLatLng, 14);
+            } else {
+                alert("Start location not found!");
+            }
+        });
+
+        // End location geocode
+        geocoder.geocode(endLocation, function(results) {
+            if (results && results.length > 0) {
+                endLatLng = results[0].center;
+                map.setView(endLatLng, 14);
+            } else {
+                alert("End location not found!");
+            }
+        });
+
+        // Clear previous routes
+        routeControl.setWaypoints([]);
+
+        // When both start and end locations are found, set the waypoints and display the route
+        if (startLatLng && endLatLng) {
+            routeControl.setWaypoints([startLatLng, endLatLng]);
+
+            // After route is found, display directions
+            routeControl.on('routesfound', function(event) {
+                var route = event.routes[0];
+                var summary = route.summary;
+                var instructions = route.instructions;
+
+                // Display route info (total distance and estimated time)
+                alert("Directions: " + summary.totalDistance / 1000 + " km, " + (summary.totalTime / 60).toFixed(0) + " minutes.");
+
+                // Display detailed directions
+                var directions = "";
+                instructions.forEach(function(instruction, index) {
+                    directions += (index + 1) + ". " + instruction.text + " (Distance: " + (instruction.distance / 1000).toFixed(2) + " km)\n";
+                });
+                alert("Turn-by-turn directions:\n\n" + directions);
+            });
+        }
+    });
+</script>
+
+</body>
+</html>
